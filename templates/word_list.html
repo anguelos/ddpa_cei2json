@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>List of words</title>
+  </head>
+  <body>
+    <h2>{{data|length}}Words Starting with <i><b>"{{filter}}"</b></i></h2>
+    <table>
+      <tr><th>#</th><th>Word</th><th>Total Occurences</th><th>Abstract Occurences</th><th>Tenor Occurences</th></tr>
+      {% for word_freqs in data %}
+      <tr>
+        <td>{{loop.index}}</td> 
+        <td>{{word_freqs.0}}</td>
+        <td><a href="/search/{{word_freqs.0}}?format=html">{{word_freqs.1}}</a></td>
+        <td><a href="/search_abstracts/{{word_freqs.0}}?format=html">{{word_freqs.2}}</a></td>
+        <td><a href="/search_tenors/{{word_freqs.0}}?format=html">{{word_freqs.3}}</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>

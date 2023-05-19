@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+
+import fargv
+import bs4
+import re
+import json
+import tqdm
+
+
+p = {
+    "charter_paths": set(),
+    "cei_filename": "cei.xml",
+    "output_filename":"charter.cei2json.json"
+    }
+
+
+def parse_cei(cei_path):
+    soup = bs4.BeautifulSoup(open(cei_path,"r"), features="lxml")
+    abstracts =  soup.find_all("cei:abstract")
+    if len(abstracts)>0:
+        abstracts = [" ".join([str(a) for a in  abstract.contents]) for abstract in abstracts]
+        #abstracts = " ".join([" ".join(abstract.contents) for abstract in abstracts])
+        abstracts = " ".join(abstracts)
+        abstracts = " ".join(abstracts.split())
+    else:
+        abstracts = ""
+    # <cei:dateRange from="14640225" to="14640225">25. Februar 1464</cei:dateRange>
+    dates = [d.attrs["from"] for d in soup.find_all("cei:daterange")]
+    dates += [d.attrs["to"] for d in soup.find_all("cei:daterange")]
+    dates += [d.attrs["value"] for d in soup.find_all("cei:date")]
+    
+    tenors =  soup.find_all("cei:tenor")
+    if len(tenors)>0:
+        tenors = [" ".join([str(t) for t in  tenor.contents]) for tenor in tenors]
+        tenors = " ".join(tenors)
+        tenors = " ".join(tenors.split())
+    else:
+        tenors = ""
+    tenors = re.sub("<\/?[a-zA-Z0-9:]+\/?>","", tenors)
+
+    return {"abstract":abstracts, "dates":sorted(dates), "tenor":tenors}
+
+if __name__ == "__main__":
+    args, _ = fargv.fargv(p)
+    for charter_path in tqdm.tqdm(args.charter_paths):
+        data = parse_cei(f"{charter_path}/{args.cei_filename}")
+        json.dump(data, open(f"{charter_path}/{args.output_filename}","w"))

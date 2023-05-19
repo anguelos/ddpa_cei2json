@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>List of charters</title>
+  </head>
+  <body>
+    <h2>Results:</h2>
+    <table border="1">
+      <tr><th>Relevance</th><th>Charter</th><th>Abstract</th><th>Tenor</th></tr>
+      {% for count_charter in data %}
+      <tr><td>{{count_charter.0}}</td><td><a href="{{fsdb_url}}/charter/{{count_charter.1}}">{{count_charter.1}}</a>
+            </td><td>{{count_charter.2}}</td><td>{{count_charter.3}}</td></tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>

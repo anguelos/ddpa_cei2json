@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+import fargv
+import flask
+import glob
+import json
+from collections import defaultdict, Counter
+import re
+import time
+from flask import Flask, jsonify, render_template, send_file, request
+import os
+
+
+p = {
+    "root":"./misc/1000_CVCharters/",
+    "filename": "charter.cei2json.json",
+    "templates": "/home/anguelos/work/src/didipcv/apps/cei2json/templates",
+    "port": 5001,
+    "fsdb_url": "http://localhost:5000/",
+    "debug": True,
+    "default_format": (["json", "html"])
+}
+
+
+args, _ = fargv.fargv(p)
+
+
+def tokenize(x):
+    x=x.lower()
+    x = re.sub(r"\s", " ", x)
+    x = re.sub(r"[^a-z0-9\s]", "", x)
+    return x.split()
+
+
+def load_cei2json(root, filename):
+    idx_files = {f.split("/")[-2]:f for f in glob.glob(f"{root}/*/*/*/{filename}")}
+    abstract_idx = {}
+    tenor_idx = {}
+
+    tenor_word2md5 = defaultdict(lambda:[])
+    abstract_word2md5 = defaultdict(lambda:[])
+    word2md5 = defaultdict(lambda:[])
+    for idx, f in idx_files.items():
+        with open(f) as fi:
+            data = json.load(fi)
+            abstract_idx[idx] = data["abstract"]
+            tenor_idx[idx] = data["tenor"]
+            tenor_words = tokenize(data["tenor"])
+            abstract_words = tokenize(data["abstract"])
+            for tenor_word in tenor_words:
+                tenor_word2md5[tenor_word].append(idx)
+                word2md5[tenor_word].append(idx)
+            for abstract_word in abstract_words:
+                abstract_word2md5[abstract_word].append(idx)
+                word2md5[abstract_word].append(idx)
+    for word, md5_list in tenor_word2md5.items():
+        occurence_count = len(md5_list)
+        tenor_word2md5[word] = sorted([(count/occurence_count, item) for item, count in Counter(md5_list).items()])
+    for word, md5_list in abstract_word2md5.items():
+        occurence_count = len(md5_list)
+        abstract_word2md5[word] = sorted([(count/occurence_count, item) for item, count in Counter(md5_list).items()], reverse=True)
+    for word, md5_list in word2md5.items():
+        occurence_count = len(md5_list)
+        abstract_word2md5[word] = sorted([(count/occurence_count, item) for item, count in Counter(md5_list).items()], reverse=True)
+    word2md5.update(tenor_word2md5)
+    word2md5.update(abstract_word2md5)
+    return tenor_word2md5, abstract_word2md5, word2md5, abstract_idx, tenor_idx
+
+
+app = Flask(__name__,  template_folder=args.templates)
+app.root_path = os. getcwd()
+
+
+@app.route('/search_abstracts/<word>', methods=['GET'])
+def search_abstracts(word):
+    file_format = request.args.get('format')
+    if file_format is None:
+        file_format = args.default_format
+    data = abstract_word2md5[word]
+    data = [(d[0], d[1],  abstract_idx[d[1]], tenor_idx[d[1]]) for d in data]
+    if file_format == "json":
+        return jsonify(data)  # Return JSON response
+    if file_format == "html":
+        return render_template('ranked_charter_list_responce.html', data=data, fsdb_url=args.fsdb_url)  # Return HTML response
+    return "Unsupported format", 406
+
+
+@app.route('/search_tenors/<word>', methods=['GET'])
+def search_tenors(word):
+    file_format = request.args.get('format')
+    if file_format is None:
+        file_format = args.default_format
+    data = tenor_word2md5[word]
+    data = [(d[0], d[1],  abstract_idx[d[1]], tenor_idx[d[1]]) for d in data]
+    if request.accept_mimetypes.accept_json:
+        return jsonify(data)  # Return JSON response
+    if request.accept_mimetypes.accept_html:
+        return render_template('ranked_charter_list_responce.html', data=data, fsdb_url=args.fsdb_url)  # Return HTML response
+    return "Unsupported format", 406
+
+
+@app.route('/search/<word>', methods=['GET'])
+def search_text(word):
+    file_format = request.args.get('format')
+    if file_format is None:
+        file_format = args.default_format
+    data = word2md5[word]
+    data = [(d[0], d[1],  abstract_idx[d[1]], tenor_idx[d[1]]) for d in data]
+    if file_format=="json":
+        return jsonify(data)  # Return JSON response
+    if file_format=="html":
+        return render_template('ranked_charter_list_responce.html', data=data, fsdb_url=args.fsdb_url)  # Return HTML response
+    return "Unsupported format", 406
+
+
+@app.route('/words/<filter>', methods=['GET'])
+def all_words(filter):
+    data = [(w, len(word2md5[w]), len(abstract_word2md5[w]), len(tenor_word2md5[w])) for w in list(word2md5.keys()) if w.startswith(filter)]
+    file_format = request.args.get('format')
+    if file_format is None:
+        file_format = args.default_format
+    if file_format=="json":
+        return jsonify(data)  # Return JSON response
+    if file_format=="html":
+        return render_template('word_list.html', data=data, fsdb_url=args.fsdb_url, filter=filter)  # Return HTML response
+    return "Unsupported format", 406
+
+
+if __name__ == "__main__":
+    start_time = time.time()
+    tenor_word2md5, abstract_word2md5, word2md5, abstract_idx, tenor_idx = load_cei2json(args.root, args.filename)
+    load_time = time.time() - start_time
+    print(load_time)
+    app.run(debug=args.debug, port=args.port)
+    
