@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FSDB search</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+    <div id="query">
+        <h3>FSDB search</h3>
+        <input type="text" id="query_str" placeholder="Search Texts for a word" onkeydown="handleKeyDown(event)">
+        <button onclick="sendTenorQuery()">Search Texts</button>
+        <button onclick="sendWordQuery()">Search Words</button>
+    </div>
+
+    <div id="duration"></div>
+    <div id="result"></div>
+
+    <script>
+        function sendTenorQuery() {
+            var query = document.getElementById("query_str").value;
+            var startTime = performance.now();
+            // Make an AJAX request to the REST service
+            $.ajax({
+                url: "/search/"+query+"?format=html",
+                method: "GET",
+                data: { query: query },
+                success: function(response) {
+                    // Display the result in the result div
+                    var endTime = performance.now();
+                    var duration = endTime - startTime;
+                    document.getElementById("result").innerHTML = response;
+                    document.getElementById("duration").innerHTML = "Query duration: " + duration + " milliseconds";
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
+        function sendWordQuery() {
+            var query = document.getElementById("query_str").value;
+            var startTime = performance.now();
+            // Make an AJAX request to the REST service
+            $.ajax({
+                url: "/words/"+query+"?format=html",
+                method: "GET",
+                data: { query: query },
+                success: function(response) {
+                    // Display the result in the result div
+                    var endTime = performance.now();
+                    var duration = endTime - startTime;
+                    document.getElementById("result").innerHTML = response;
+                    document.getElementById("duration").innerHTML = "Query duration: " + duration + " milliseconds";
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
+        function handleKeyDown(event) {
+            if (event.key === "Enter") {
+                sendTextQuery();
+                event.preventDefault();
+            }
+        }
+    </script>
+</body>
+</html>

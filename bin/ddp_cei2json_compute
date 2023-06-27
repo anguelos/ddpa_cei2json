@@ -5,6 +5,10 @@ import bs4
 import re
 import json
 import tqdm
+import time
+from lxml import etree
+
+from ddp_util import infer_date
 
 
 p = {
@@ -12,6 +16,33 @@ p = {
     "cei_filename": "cei.xml",
     "output_filename":"charter.cei2json.json"
     }
+
+
+namespaces = {"atom": "http://www.w3.org/2005/Atom", "cei": "http://www.monasterium.net/NS/cei"}
+
+xpath_expressions = {
+    "cei_date": "/atom:entry/atom:content/cei:text/cei:body/cei:chDesc/cei:issued/cei:date/text()",
+    "cei_date_ATTRIBUTE_value": "/atom:entry/atom:content/cei:text/cei:body/cei:chDesc/cei:issued/cei:date/@value",
+    "cei_date_ATTRIBUTE_notBefore": "/atom:entry/atom:content/cei:text/cei:body/cei:chDesc/cei:issued/cei:date/@notBefore",
+    "cei_date_ATTRIBUTE_notAfter": "/atom:entry/atom:content/cei:text/cei:body/cei:chDesc/cei:issued/cei:date/@notAfter",
+    "cei_dateRange": "/atom:entry/atom:content/cei:text/cei:body/cei:chDesc/cei:issued/cei:dateRange/text()",
+    "cei_dateRange_ATTRIBUTE_from": "/atom:entry/atom:content/cei:text/cei:body/cei:chDesc/cei:issued/cei:dateRange/@from",
+    "cei_dateRange_ATTRIBUTE_to": "/atom:entry/atom:content/cei:text/cei:body/cei:chDesc/cei:issued/cei:dateRange/@to"
+}
+
+
+def extract_cei_dates(cei_path):
+    with open(cei_path, "rb") as f:
+        root = etree.parse(f).getroot()
+        data = {}
+        for key, xpath_expr in xpath_expressions.items():
+            result = root.xpath(xpath_expr, namespaces=namespaces, smart_strings=False)
+            if len(result) == 1:
+                data[key] = result[0] or None
+            else:
+                data[key] = result or None
+        valid_dates = sorted(list([str(d).strip() for d in data.values() if d is not None]))
+        return valid_dates
 
 
 def parse_cei(cei_path):
@@ -25,10 +56,12 @@ def parse_cei(cei_path):
     else:
         abstracts = ""
     # <cei:dateRange from="14640225" to="14640225">25. Februar 1464</cei:dateRange>
-    dates = [d.attrs["from"] for d in soup.find_all("cei:daterange")]
-    dates += [d.attrs["to"] for d in soup.find_all("cei:daterange")]
-    dates += [d.attrs["value"] for d in soup.find_all("cei:date")]
-    
+    #dates = [d.attrs["from"] for d in soup.find_all("cei:daterange")]
+    #dates += [d.attrs["to"] for d in soup.find_all("cei:daterange")]
+    #dates += [d.attrs["value"] for d in soup.find_all("cei:date")]
+    dates = extract_cei_dates(cei_path)
+    dates = [infer_date(d, fail_quietly=True) for d in dates]
+
     tenors =  soup.find_all("cei:tenor")
     if len(tenors)>0:
         tenors = [" ".join([str(t) for t in  tenor.contents]) for tenor in tenors]
@@ -37,11 +70,14 @@ def parse_cei(cei_path):
     else:
         tenors = ""
     tenors = re.sub("<\/?[a-zA-Z0-9:]+\/?>","", tenors)
-
+    
+    
     return {"abstract":abstracts, "dates":sorted(dates), "tenor":tenors}
 
 if __name__ == "__main__":
     args, _ = fargv.fargv(p)
+    t = time.time()
     for charter_path in tqdm.tqdm(args.charter_paths):
         data = parse_cei(f"{charter_path}/{args.cei_filename}")
         json.dump(data, open(f"{charter_path}/{args.output_filename}","w"))
+    print(f"Computer {len(args.charter_paths)} charters, {time.time()-t:.5} sec.")
