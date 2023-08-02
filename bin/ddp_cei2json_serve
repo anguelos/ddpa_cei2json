@@ -13,7 +13,7 @@ import os
 p = {
     "root":"./misc/1000_CVCharters/",
     "filename": "charter.cei2json.json",
-    "templates": "/home/anguelos/work/src/didipcv/apps/cei2json/templates",
+    "templates": "/home/anguelos/work/src/didipcv/apps/ddpa_cei2json/templates",
     "port": 5001,
     "fsdb_url": "http://localhost:5000/",
     "debug": True,
@@ -25,7 +25,7 @@ args, _ = fargv.fargv(p)
 
 
 def tokenize(x):
-    x=x.lower()
+    x = x.lower()
     x = re.sub(r"\s", " ", x)
     x = re.sub(r"[^a-z0-9\s]", "", x)
     return x.split()
@@ -35,7 +35,6 @@ def load_cei2json(root, filename):
     idx_files = {f.split("/")[-2]:f for f in glob.glob(f"{root}/*/*/*/{filename}")}
     abstract_idx = {}
     tenor_idx = {}
-
     tenor_word2md5 = defaultdict(lambda:[])
     abstract_word2md5 = defaultdict(lambda:[])
     word2md5 = defaultdict(lambda:[])
@@ -66,8 +65,12 @@ def load_cei2json(root, filename):
     return tenor_word2md5, abstract_word2md5, word2md5, abstract_idx, tenor_idx
 
 
-app = Flask(__name__,  template_folder=args.templates)
-app.root_path = os. getcwd()
+#app = Flask(__name__, template_folder=args.templates)
+app = Flask(__name__, template_folder="/home/anguelos/work/src/didipcv/apps/ddpa_cei2json/templates")
+app.config['EXPLAIN_TEMPLATE_LOADING'] = True
+
+#app.root_path = os.getcwd()
+
 
 
 @app.route('/search_abstracts/<word>', methods=['GET'])
@@ -91,9 +94,9 @@ def search_tenors(word):
         file_format = args.default_format
     data = tenor_word2md5[word]
     data = [(d[0], d[1],  abstract_idx[d[1]], tenor_idx[d[1]]) for d in data]
-    if request.accept_mimetypes.accept_json:
+    if file_format == "json":
         return jsonify(data)  # Return JSON response
-    if request.accept_mimetypes.accept_html:
+    if file_format == "html":
         return render_template('ranked_charter_list_responce.html', data=data, fsdb_url=args.fsdb_url)  # Return HTML response
     return "Unsupported format", 406
 
@@ -114,7 +117,8 @@ def search_text(word):
 
 @app.route('/words/<filter>', methods=['GET'])
 def all_words(filter):
-    data = [(w, len(word2md5[w]), len(abstract_word2md5[w]), len(tenor_word2md5[w])) for w in list(word2md5.keys()) if w.startswith(filter)]
+    #data = [(w, len(word2md5[w]), len(abstract_word2md5[w]), len(tenor_word2md5[w])) for w in list(word2md5.keys()) if w.startswith(filter)]
+    data = [(w, len(word2md5[w]), len(abstract_word2md5[w]), len(tenor_word2md5[w])) for w in list(word2md5.keys()) if filter in w]
     file_format = request.args.get('format')
     if file_format is None:
         file_format = args.default_format
@@ -125,10 +129,15 @@ def all_words(filter):
     return "Unsupported format", 406
 
 
+@app.route('/', methods=['GET'])
+def get_query_page():
+    return render_template('search_query.html', fsdb_url=args.fsdb_url)
+
 if __name__ == "__main__":
     start_time = time.time()
     tenor_word2md5, abstract_word2md5, word2md5, abstract_idx, tenor_idx = load_cei2json(args.root, args.filename)
     load_time = time.time() - start_time
     print(load_time)
+    loaded_templates = [template for template in app.jinja_loader.list_templates()]
     app.run(debug=args.debug, port=args.port)
     
