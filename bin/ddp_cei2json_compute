@@ -6,6 +6,9 @@ import re
 import json
 import tqdm
 import time
+import glob
+import sys
+import traceback
 from lxml import etree
 
 from ddp_util import infer_date
@@ -14,7 +17,9 @@ from ddp_util import infer_date
 p = {
     "charter_paths": set(),
     "cei_filename": "cei.xml",
-    "output_filename":"charter.cei2json.json"
+    "output_filename":"charter.cei2json.json",
+    "charter_glob": "",
+    "resume_on_exception": False,
     }
 
 
@@ -76,8 +81,17 @@ def parse_cei(cei_path):
 
 if __name__ == "__main__":
     args, _ = fargv.fargv(p)
+    if len(args.charter_paths)==0 and args.charter_glob != "":
+        args.charter_paths = glob.glob(args.charter_glob)
     t = time.time()
     for charter_path in tqdm.tqdm(args.charter_paths):
-        data = parse_cei(f"{charter_path}/{args.cei_filename}")
-        json.dump(data, open(f"{charter_path}/{args.output_filename}","w"))
-    print(f"Computer {len(args.charter_paths)} charters, {time.time()-t:.5} sec.")
+        try:
+            data = parse_cei(f"{charter_path}/{args.cei_filename}")
+            json.dump(data, open(f"{charter_path}/{args.output_filename}","w"))
+        except:
+            print(f"Exception thrown for {charter_path}", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+            if not args.resume_on_exception:
+                sys.exit(1)
+    print(f"Computer {len(args.charter_paths)} charters, {time.time()-t:.5} sec.", file=sys.stderr)
+
