@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDP CEI to JSON</title>
+</head>
+<body>
+    <h1>DDP CEI to JSON Converter</h1>
+    <p>Welcome to the DDP CEI to JSON conversion tool. Use this interface to convert CEI formatted documents into JSON format.</p>
+    <H3>Fast Text Indexes</H3>
+    <table border="1">
+        <th> <td>Index Name</td> <td>Text Characters</td> <td># Documents</td> </th>
+        {% for idx_name, n_chars, n_docs in indexes %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ idx_name }}</td>
+            <td>{{ n_chars }}</td>
+            <td>{{ n_docs }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
