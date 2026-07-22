@@ -1,0 +1,18 @@
+{% extends "cei_base.html" %}
+{% block title %}Locations{% endblock %}
+{% block page %}
+<h1>Locations ({{ facet|length }})</h1>
+<form action="" method="get">
+  <input name="contains" value="{{ needle }}" placeholder="filter place names…" size="24">
+  <button type="submit">Filter</button>
+</form>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>place</th><th>charters</th></tr>
+  {% for name, count in facet %}
+  <tr>
+    <td><a href="{{ route_prefix }}/filter?location={{ name|urlencode }}">{{ name }}</a></td>
+    <td style="text-align:right">{{ count }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

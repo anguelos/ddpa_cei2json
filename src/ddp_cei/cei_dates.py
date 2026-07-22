@@ -243,8 +243,8 @@ def infer_date(date_str: str, fail_quietly: bool = False):
         if __is_plausible_date(date):
             return date
 
-    if re.match("^[0-9\-,\.\s]{10}$", date_str):
-        date = re.split("\-|\.|,|\s", date_str)
+    if re.match(r"^[0-9\-,\.\s]{10}$", date_str):
+        date = re.split(r"\-|\.|,|\s", date_str)
         if len(date) == 3 and len(date[2]) in (3, 4):
             date = date[::-1]
         date = [d if d != '' else '0' for d in date]
@@ -255,8 +255,8 @@ def infer_date(date_str: str, fail_quietly: bool = False):
         else:
             return f"Unparsed_V1: '{date_str}', {repr(date)}"
 
-    if re.match("^[0-9]+\.[0-9]+\.[0-9]+$", date_str):
-        date = re.split("\.", date_str)
+    if re.match(r"^[0-9]+\.[0-9]+\.[0-9]+$", date_str):
+        date = re.split(r"\.", date_str)
         if len(date) == 3 and len(date[2]) in (3, 4):
             date = date[::-1]
         if len(date[0]) in (3, 4) and len(date[1]) in (1, 2) and len(date[2]) in (1, 2):
@@ -274,7 +274,7 @@ def infer_date(date_str: str, fail_quietly: bool = False):
             return date
 
     # Czeck dates.
-    if re.match("^[0-9][0-9]?\.\s+[a-z]+\.?\s+[0-9]{3}[0-9]?$", date_str):
+    if re.match(r"^[0-9][0-9]?\.\s+[a-z]+\.?\s+[0-9]{3}[0-9]?$", date_str):
         date_list = date_str.split()
         if fail_quietly:
             date_list[1] = __month2num.get(date_list[1], 0)
@@ -287,7 +287,7 @@ def infer_date(date_str: str, fail_quietly: bool = False):
             return date
 
     # EG '1288 dezember 22.'
-    if re.match("^[0-9]{3}[0-9]?\s+[a-z]+\.?\s+[0-9][0-9]?\.?$", date_str):
+    if re.match(r"^[0-9]{3}[0-9]?\s+[a-z]+\.?\s+[0-9][0-9]?\.?$", date_str):
         date_list = date_str.split()
         if fail_quietly:
             date_list[1] = __month2num.get(date_list[1], 0)

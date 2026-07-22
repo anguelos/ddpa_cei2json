@@ -1,0 +1,40 @@
+{% extends "cei_base.html" %}
+{% from "_macros.html" import view_marker %}
+{% block title %}CEI metadata search{% endblock %}
+{% block page %}
+{{ view_marker('root', context=True) }}
+<h1>CEI metadata — search &amp; filter</h1>
+<p>
+  {{ stats.charters }} charters ·
+  {{ stats.abstracts }} abstracts · {{ stats.tenors }} tenors ·
+  {{ stats.dated }} dated · <a href="{{ route_prefix }}/locations">{{ stats.locations }} locations</a>
+</p>
+
+<h2>Full-text search</h2>
+<form action="" method="get" onsubmit="event.preventDefault();
+  var f=this; var field=f.field.value; var q=encodeURIComponent(f.q.value);
+  var params=new URLSearchParams();
+  if(f.from.value) params.set('from', f.from.value);
+  if(f.to.value) params.set('to', f.to.value);
+  if(f.location_contains.value) params.set('location_contains', f.location_contains.value);
+  window.location = '{{ route_prefix }}/search/'+field+'/'+q+(params.toString()?('?'+params):'');">
+  <input name="q" placeholder="substring or regex, e.g. seb.*stian" size="32" required>
+  <select name="field">
+    <option value="all">abstract + tenor</option>
+    <option value="abstract">abstract</option>
+    <option value="tenor">tenor</option>
+  </select>
+  <label>from <input name="from" placeholder="YYYY[-MM[-DD]]" size="10"></label>
+  <label>to <input name="to" placeholder="YYYY[-MM[-DD]]" size="10"></label>
+  <label>place <input name="location_contains" placeholder="contains…" size="12"></label>
+  <button type="submit">Search</button>
+</form>
+
+<h2>Filter by metadata only</h2>
+<form action="{{ route_prefix }}/filter" method="get">
+  <label>from <input name="from" placeholder="YYYY[-MM[-DD]]" size="10"></label>
+  <label>to <input name="to" placeholder="YYYY[-MM[-DD]]" size="10"></label>
+  <label>place <input name="location_contains" placeholder="contains…" size="12"></label>
+  <button type="submit">Filter</button>
+</form>
+{% endblock %}

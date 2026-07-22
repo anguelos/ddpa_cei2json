@@ -1,4 +1,8 @@
 # ddpa_cei2json
+
+![repo size](https://img.shields.io/github/repo-size/anguelos/ddpa_cei2json)
+![license](https://img.shields.io/github/license/anguelos/ddpa_cei2json)
+
 Trivial app trying to crudelly extract abstracts, tenors, dates from cei files.
 
 # Offline mode:

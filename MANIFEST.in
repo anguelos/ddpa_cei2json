@@ -1,2 +1,1 @@
 recursive-include src/ddp_cei/templates *.html
-recursive-include src/ddp_cei/static *

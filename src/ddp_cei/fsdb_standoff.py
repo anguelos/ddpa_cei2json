@@ -1,15 +1,9 @@
-import sys
 from typing import Dict, Generator, Optional, Tuple
-import numpy as np
-from collections import defaultdict, Counter
-import glob
-import json
 import re
+import string
+import numpy as np
 import pylelemmatize
 from pylelemmatize import AbstractLemmatizer, LemmatizerBMP
-import string
-from tqdm import tqdm
-from .cei2json import load_cei2json
 
 
 class StandoffStrIdx:
@@ -35,8 +29,8 @@ class StandoffStrIdx:
             np_md5.append(md5_idx)
             rev_idx[md5_idx] = (cur_pos, cur_pos + len(txt))
             cur_pos += len(txt)
-        np_idx = np.concatenate(np_idx, axis=0)
-        print(repr(np_md5[0]))
+        # An empty corpus (no documents) must not blow up np.concatenate; return empties.
+        np_idx = np.concatenate(np_idx, axis=0) if np_idx else np.empty(0, dtype=np.int32)
         np_md5 = np.array(np_md5, dtype="<U32")
         all_txts = ''.join(all_txts)
         return all_txts, np_idx, np_md5, rev_idx
@@ -90,25 +84,3 @@ class StandoffStrIdx:
     
     def __str__(self):
         return f"StandoffStrIdx(len={len(self.all_txts)}, n_docs={len(self.rev_idx)})"
-
-
-if __name__ == "__main__":
-    import time
-    t=time.time()
-    ll = LemmatizerBMP({c:c.lower() for c in string.printable})
-    tenor_word2md5, abstract_word2md5, word2md5, abstract_idx, tenor_idx = load_cei2json(root="/home/anguelos/data/monasterium/", filename="CH.cei2json.json", verbose=True)
-    print(f"Loaded in {time.time()-t:.5} sec.")
-    standoff_tenor_idx = StandoffStrIdx.from_md5dict(tenor_idx)
-    print(f"Tenor Index created in {time.time()-t:.5} sec. Sz: {len(standoff_tenor_idx)}")
-    standoff_abstract_idx = StandoffStrIdx.from_md5dict(abstract_idx)
-    print(f"Abstract Index created in {time.time()-t:.5} sec. Sz: {len(standoff_abstract_idx)}")
-
-    tenor_results = list(standoff_tenor_idx.find("gegen", lemmatizer=ll))
-    print(f"Found {len(tenor_results)} results in {time.time()-t:.5} sec.")
-    for n, (id, (start, end)) in enumerate(tenor_results[:30]):
-        print(f"{n:<5} {id}: {standoff_tenor_idx.get_tttf(id, (start - 10, end + 10))}")
-
-    abstract_results = list(standoff_abstract_idx.find("seb.*stian", lemmatizer=ll))
-    print(f"Found {len(abstract_results)} results in {time.time()-t:.5} sec.")
-    for n, (id, (start, end)) in enumerate(abstract_results[:30]):
-        print(f"{n:<5} {id}: {standoff_abstract_idx.get_tttf(id, (start - 10, end + 10))}")

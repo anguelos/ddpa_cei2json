@@ -1,0 +1,51 @@
+{% extends "cei_base.html" %}
+{% from "_macros.html" import view_region %}
+{% block title %}Charter {{ record.md5[:10] }}…{% endblock %}
+{% block head_extra %}
+<style>
+  /* image strip: full width, fixed height, centered, horizontal scroll when many */
+  .cei-images { display: flex; gap: .5rem; justify-content: center; align-items: center;
+    height: 200px; overflow-x: auto; overflow-y: hidden; padding: .4rem;
+    border-top: 1px solid rgba(128,128,128,.4); margin-top: 1rem; }
+  .cei-images img { height: 180px; width: auto; display: block; flex: 0 0 auto; }
+  .cei-images .missing { color: #888; font-size: .9rem; }
+</style>
+{% endblock %}
+{% block page %}
+{% call view_region('charter', record.md5, context=True) %}
+<h1>Charter</h1>
+<p class="md5"><code>{{ record.md5 }}</code>{% if signature %} — {{ signature }}{% endif %}</p>
+
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>date</th><td>
+    {% if record.date %}{{ record.date.start }}{% if record.date.end != record.date.start %} … {{ record.date.end }}{% endif %}
+    {% else %}<em>unknown</em>{% endif %}</td></tr>
+  <tr><th>place</th><td>{{ record.location or '—' }}</td></tr>
+</table>
+
+{% if record.abstract %}
+<h2>Abstract</h2>
+<p>{{ record.abstract }}</p>
+{% endif %}
+
+{% if record.tenor %}
+<h2>Tenor</h2>
+<p class="tenor">{{ record.tenor }}</p>
+{% endif %}
+
+{% if image_ids %}
+<h2>Images ({{ image_ids|length }})</h2>
+<div class="cei-images">
+  {% if st_available %}
+    {% for id in image_ids %}
+      <a href="{{ st_base }}/st/iiif/{{ id }}" title="{{ id }}">
+        <img loading="lazy" src="{{ st_base }}/st/iiif/{{ id }}/full/,180/0/default.jpg" alt="{{ id }}">
+      </a>
+    {% endfor %}
+  {% else %}
+    <span class="missing">{{ image_ids|length }} image(s) — no live image service (Static/st) to render them; see the topnav links.</span>
+  {% endif %}
+</div>
+{% endif %}
+{% endcall %}
+{% endblock %}

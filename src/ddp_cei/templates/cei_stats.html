@@ -1,0 +1,33 @@
+{% extends "cei_base.html" %}
+{% from "_macros.html" import view_region %}
+{% block title %}{{ kind }} {{ entity_id }}{% endblock %}
+{% block head_extra %}
+<style>
+  .charset { font-family: ui-monospace, monospace; word-break: break-all;
+    background: rgba(128,128,128,.12); padding: .3rem .5rem; border-radius: .3rem;
+    max-height: 6rem; overflow-y: auto; }
+  .stats th { text-align: left; }
+</style>
+{% endblock %}
+{% block page %}
+{% set vt = 'fond' if viewed_fond is defined else 'archive' %}
+{% set vv = viewed_fond if viewed_fond is defined else viewed_archive %}
+{% call view_region(vt, vv, context=True) %}
+<h1>{{ kind }}: {{ entity_id }}</h1>
+
+<table class="stats" border="1" cellpadding="5" cellspacing="0">
+  <tr><th>charters</th><td>{{ stats.charters }}</td></tr>
+  <tr><th>with abstract / with tenor</th><td>{{ stats.with_abstract }} / {{ stats.with_tenor }}</td></tr>
+  <tr><th>abstract chars (total)</th><td>{{ stats.abstract_chars }}</td></tr>
+  <tr><th>tenor chars (total)</th><td>{{ stats.tenor_chars }}</td></tr>
+  <tr><th>abstract charset length</th><td>{{ stats.abstract_charset_len }}</td></tr>
+  <tr><th>tenor charset length</th><td>{{ stats.tenor_charset_len }}</td></tr>
+  <tr><th>charter charset length <small>(abstract ⊕ tenor)</small></th><td>{{ stats.charter_charset_len }}</td></tr>
+</table>
+
+<h2>Character sets</h2>
+<p>abstract:</p><div class="charset">{{ stats.abstract_charset }}</div>
+<p>tenor:</p><div class="charset">{{ stats.tenor_charset }}</div>
+<p>charter (abstract ⊕ tenor):</p><div class="charset">{{ stats.charter_charset }}</div>
+{% endcall %}
+{% endblock %}

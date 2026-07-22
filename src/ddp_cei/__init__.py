@@ -1,9 +1,10 @@
-from .fsdb_standoff import StandoffStrIdx, load_cei2json
-from typing import Dict, Tuple, Optional, Generator
+from .version import __version__
+from .fsdb_standoff import StandoffStrIdx
 from .cei_dates import infer_date
-from .cei_parser import parse_cei, extract_cei_dates
-from .cei2json import load_cei2json, tokenize
-from .config import config
+from .cei_extract import cei_to_dict
 
 
-__all__ = ["StandoffStrIdx", "load_cei2json", "infer_date", "parse_cei", "extract_cei_dates", "load_cei2json", "tokenize"]
+# NB: the serving/offline CLIs (cei2json_serve, cei2json_offline) are NOT imported here so the
+# package stays importable without Flask / the didipcv `fsdb` harness — the console-script entry
+# points import them directly.
+__all__ = ["__version__", "StandoffStrIdx", "infer_date", "cei_to_dict"]

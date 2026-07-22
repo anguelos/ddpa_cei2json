@@ -1,0 +1,15 @@
+{# Local base for cei2json pages: shared DiDip chrome (topnav service box, favicon, message bar)
+   from base.html, plus the basket widget in the topnav, the breadcrumb trail, and the active-scope
+   note — all rendered once here. Pages fill {% block page %}; they pass `crumbs` (breadcrumb pairs)
+   and, on scope-aware views, `scope` (a ScopeResult). The basket widget reads the page context
+   from the standardized #viewed_<type> markers the pages emit. #}
+{% extends "base.html" %}
+{% from "_macros.html" import breadcrumb %}
+{% block topnav_extra %}{% include "_basket.html" %}{% endblock %}
+{% block content %}
+  {% if crumbs %}{{ breadcrumb(crumbs) }}{% endif %}
+  {% if scope is defined and scope and scope.active %}
+    <p class="scope-note">🧺 scope: {{ scope.note }}</p>
+  {% endif %}
+  {% block page %}{% endblock %}
+{% endblock %}

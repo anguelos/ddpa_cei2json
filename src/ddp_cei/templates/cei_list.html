@@ -1,0 +1,78 @@
+{% extends "cei_base.html" %}
+{% from "_macros.html" import view_region %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_head %}
+<style>
+  /* Results table: # 5% · [score 5%] · text 65% (60% when scored) · date 10% · place 20%.
+     table-layout:fixed is what makes the percentages binding. */
+  .cei-results { width: 100%; table-layout: fixed; }
+  .cei-results col.c-idx         { width:  5%; }
+  .cei-results col.c-score       { width:  5%; }
+  .cei-results col.c-text        { width: 65%; }
+  .cei-results col.c-text-scored { width: 60%; }
+  .cei-results col.c-date        { width: 10%; }
+  .cei-results col.c-place       { width: 20%; }
+  /* fixed layout clips instead of reflowing, so long md5s/abstracts must be allowed to break */
+  .cei-results th, .cei-results td { vertical-align: top; overflow-wrap: anywhere; }
+  .cei-results td.num { text-align: right; }
+  .cei-results .snippet, .cei-results .abstract { margin-top: .25rem; }
+</style>
+{% endblock %}
+{% set view_type = 'charter_ranking' if viewed_charter_ranking is defined else 'charter_list' %}
+{% set view_value = viewed_charter_ranking if viewed_charter_ranking is defined else viewed_charter_list %}
+
+{# Paging links carry class="ddp-nav": ddp_scope.js intercepts the click and re-POSTs the active
+   basket to the same href, so paging keeps its scope while skip/count stay in the URL. (The shared
+   generic_pagination.html already does this, but it builds /base/<skip>/<count> PATH segments and
+   this service pages by query string, so we keep our own macro.) #}
+{% macro pagelink(pager, label) %}
+  {% set s, c = pager %}
+  <a class="ddp-nav" href="{{ paging_base_url }}?{{ base_query }}{% if base_query %}&{% endif %}skip={{ s }}&count={{ c }}">{{ label }}</a>
+{% endmacro %}
+
+{% block page %}
+<h1>{{ title }}</h1>
+<p>{{ total }} result{{ '' if total == 1 else 's' }}{% if total %} — showing {{ skip + 1 }}–{{ skip + items|length }}{% endif %}.</p>
+
+{% if total %}
+<p class="pager">
+  {{ pagelink(pagers[0], '« first') }} ·
+  {{ pagelink(pagers[1], '‹ prev') }} ·
+  {{ pagelink(pagers[3], 'next ›') }} ·
+  {{ pagelink(pagers[4], 'last »') }}
+</p>
+{% endif %}
+
+{% set scored = items and items[0].score is defined %}
+{% call view_region(view_type, view_value, context=True) %}
+{# Column order and widths are fixed by <colgroup> + table-layout:fixed — without the fixed layout
+   a browser ignores the percentages and re-stretches the columns to fit a long abstract, which is
+   exactly what makes `text` swallow the table. Search results add a `score` column (5%) taken out
+   of `text`, so the row still totals 100%. #}
+<table class="cei-results" border="1" cellpadding="4" cellspacing="0">
+  <colgroup>
+    <col class="c-idx">
+    {% if scored %}<col class="c-score">{% endif %}
+    <col class="{{ 'c-text-scored' if scored else 'c-text' }}">
+    <col class="c-date">
+    <col class="c-place">
+  </colgroup>
+  <tr><th>#</th>{% if scored %}<th>score</th>{% endif %}
+      <th>text</th><th>date</th><th>place</th></tr>
+  {% for it in items %}
+  <tr data-charter-md5="{{ it.md5 }}">
+    <td class="num">{{ skip + loop.index }}</td>
+    {% if it.score is defined %}<td class="num">{{ it.score }}</td>{% endif %}
+    <td>
+      {# NO ddp-nav: /cei/charter/<md5> is an unscoped_route, so POSTing a basket at it is a 400. #}
+      <a href="{{ route_prefix }}/charter/{{ it.md5 }}">{{ it.md5[:10] }}…</a>
+      {% if it.snippet %}<div class="snippet">…{{ it.snippet }}…</div>
+      {% elif it.abstract %}<div class="abstract">{{ it.abstract[:200] }}{% if it.abstract|length > 200 %}…{% endif %}</div>{% endif %}
+    </td>
+    <td>{% if it.date %}{{ it.date.start }}{% if it.date.end != it.date.start %} … {{ it.date.end }}{% endif %}{% else %}—{% endif %}</td>
+    <td>{{ it.location or '—' }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endcall %}
+{% endblock %}
